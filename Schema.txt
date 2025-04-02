@@ -1,0 +1,24 @@
+/jail-inventory-system/
+├── backend/              # Flask backend
+│   ├── app.py            # Main Flask application
+│   └── requirements.txt  # Backend dependencies
+├── components/           # Reusable React components
+│   ├── Layout.js
+│   └── ProtectedPage.js
+├── pages/                # Next.js pages (routes)
+│   ├── _app.js
+│   ├── index.js
+│   ├── login.js
+│   ├── inmates.js
+│   ├── inventory.js
+│   ├── laundry.js
+│   ├── release.js
+│   ├── settings.js
+│   ├── inmate/[id].js
+│   └── inmates/add.js
+├── public/               # Static assets
+│   └── favicon.ico       # Favicon placeholder
+├── theme.js              # Material-UI theme configuration
+├── package.json          # Frontend dependencies and scripts
+├── next.config.js        # Next.js configuration
+└── jsconfig.json         # Path aliases for imports
