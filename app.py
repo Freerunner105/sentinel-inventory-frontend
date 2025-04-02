@@ -11,15 +11,15 @@ import traceback
 # Flask app setup
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'jail.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'jail.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6'
+app.config['JWT_SECRET_KEY'] = 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6'  # Consider securing this in production
 app.config['JWT_HEADER_TYPE'] = 'Bearer'
 app.config['JWT_HEADER_NAME'] = 'Authorization'
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "https://jail-inventory-frontend.herokuapp.com"}}, supports_credentials=True)  # Update with your actual frontend URL
 
 # JWT error handlers
 @jwt.invalid_token_loader
@@ -32,7 +32,7 @@ def unauthorized_callback(error):
     print(f"Unauthorized error: {error}")
     return jsonify({'error': 'Missing or invalid Authorization header'}), 401
 
-# Database Models (unchanged)
+# Database Models
 class User(db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
@@ -109,7 +109,7 @@ class ItemCode(db.Model):
     type = db.Column(db.String(50), nullable=False)
     code = db.Column(db.String(2), unique=True, nullable=False)
 
-# Utility function (unchanged)
+# Utility function to generate unique barcodes
 def generate_barcode(item_code, size_code):
     size_map = {
         'SM': '01', 'MD': '02', 'LG': '03', 'XL': '04', '2XL': '05', '3XL': '06',
@@ -123,7 +123,7 @@ def generate_barcode(item_code, size_code):
         barcode = f"{item_code}{size_numeric}{serial}"
     return barcode
 
-# Existing Routes (unchanged, included for context)
+# Routes
 @app.route('/login', methods=['POST'])
 def login():
     try:
@@ -358,6 +358,44 @@ def create_item_code():
     except Exception as e:
         db.session.rollback()
         print(f"Error in create_item_code: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/inventory/remove', methods=['POST'])
+@jwt_required()
+def remove_item():
+    identity = get_jwt_identity()
+    claims = get_jwt()
+    role = claims.get('role')
+    if role not in ['Admin', 'Staff']:
+        return jsonify({'error': 'Permission denied'}), 403
+    data = request.get_json()
+    if not data or 'barcode' not in data or 'condition' not in data:
+        return jsonify({'error': 'Barcode and Condition are required'}), 400
+    barcode = data['barcode']
+    condition = data['condition']
+    notes = data.get('notes', '')
+    if condition not in ['Used', 'Altered', 'Damaged']:
+        return jsonify({'error': 'Condition must be Used, Altered, or Damaged'}), 400
+    try:
+        item = Item.query.filter_by(barcode=barcode).first()
+        if not item:
+            return jsonify({'error': 'Item not found'}), 404
+        if item.status == 'Assigned':
+            return jsonify({'error': 'Cannot remove assigned item'}), 400
+        log = ActionLog(
+            action='Item Removed',
+            user_id=int(identity),
+            details=f"Item {barcode} removed with condition {condition}, notes: {notes}"
+        )
+        db.session.add(log)
+        recycled = RecycledBarcodes(barcode=barcode)
+        db.session.add(recycled)
+        db.session.delete(item)
+        db.session.commit()
+        return jsonify({'message': 'Item removed successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error in remove_item: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/laundry', methods=['GET'])
@@ -717,60 +755,22 @@ def get_action_logs():
         print(f"Error in get_action_logs: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
-# New Route: Delete Item from Inventory
-@app.route('/inventory/remove', methods=['POST'])
-@jwt_required()
-def remove_item():
-    identity = get_jwt_identity()
-    claims = get_jwt()
-    role = claims.get('role')
-    if role not in ['Admin', 'Staff']:
-        return jsonify({'error': 'Permission denied'}), 403
-    data = request.get_json()
-    if not data or 'barcode' not in data or 'condition' not in data:
-        return jsonify({'error': 'Barcode and Condition are required'}), 400
-    barcode = data['barcode']
-    condition = data['condition']
-    notes = data.get('notes', '')
-    if condition not in ['Used', 'Altered', 'Damaged']:
-        return jsonify({'error': 'Condition must be Used, Altered, or Damaged'}), 400
-    try:
-        item = Item.query.filter_by(barcode=barcode).first()
-        if not item:
-            return jsonify({'error': 'Item not found'}), 404
-        if item.status == 'Assigned':
-            return jsonify({'error': 'Cannot remove assigned item'}), 400
-        # Log the removal before deleting
-        log = ActionLog(
-            action='Item Removed',
-            user_id=int(identity),
-            details=f"Item {barcode} removed with condition {condition}, notes: {notes}"
-        )
-        db.session.add(log)
-        # Add barcode to recycled_barcodes table
-        recycled = RecycledBarcodes(barcode=barcode)
-        db.session.add(recycled)
-        # Delete the item
-        db.session.delete(item)
-        db.session.commit()
-        return jsonify({'message': 'Item removed successfully'}), 200
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error in remove_item: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({'error': str(e)}), 500
-
-# Database Initialization (unchanged)
+# Database Initialization
 with app.app_context():
     db.create_all()
-    if not User.query.first():
+    if not User.query.filter_by(username='admin').first():
         admin = User(username='admin', role='Admin', first_name='Admin', last_name='User', email='admin@example.com')
         admin.set_password('admin123')
+        db.session.add(admin)
+    if not User.query.filter_by(username='staff').first():
         staff = User(username='staff', role='Staff', first_name='Staff', last_name='One', email='staff@example.com')
         staff.set_password('staff123')
+        db.session.add(staff)
+    if not User.query.filter_by(username='trustee').first():
         trustee = User(username='trustee', role='Trustee', first_name='Trustee', last_name='Two', email='trustee@example.com')
         trustee.set_password('trustee123')
-        db.session.add_all([admin, staff, trustee])
-        db.session.commit()
+        db.session.add(trustee)
+    db.session.commit()
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
