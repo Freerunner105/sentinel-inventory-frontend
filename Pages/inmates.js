@@ -18,7 +18,7 @@ const InmatesDashboard = () => {
   const fetchInmates = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/inmates', {
+      const response = await axios.get('https://jail-inventory-backend.herokuapp.com', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setInmates(response.data);

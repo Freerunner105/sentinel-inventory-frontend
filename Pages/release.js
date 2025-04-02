@@ -22,14 +22,14 @@ const ReleaseDashboard = () => {
   const fetchInmates = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/inmates', {
+      const response = await axios.get('https://jail-inventory-backend.herokuapp.com/inmates', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const inmatesWithDetails = await Promise.all(response.data.map(async (inmate) => {
-        const itemsResponse = await axios.get(`http://localhost:5000/inmates/${inmate.id}/items`, {
+        const itemsResponse = await axios.get(`https://jail-inventory-backend.herokuapp.com/inmates/${inmate.id}/items`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const feesResponse = await axios.get(`http://localhost:5000/inmates/${inmate.id}/fees`, {
+        const feesResponse = await axios.get(`https://jail-inventory-backend.herokuapp.com/inmates/${inmate.id}/fees`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         return {
@@ -53,7 +53,7 @@ const ReleaseDashboard = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/inmates/${barcode}/items`, {
+      const response = await axios.get(`https://jail-inventory-backend.herokuapp.com/inmates/${barcode}/items`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data.length > 0) {
@@ -83,7 +83,7 @@ const ReleaseDashboard = () => {
   const handleConditionSelect = async (condition) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/laundry/return-inventory', { barcode: selectedBarcode, condition }, {
+      await axios.post('https://jail-inventory-backend.herokuapp.com/laundry/return-inventory', { barcode: selectedBarcode, condition }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAlertMessage({ type: 'success', text: 'Item returned to inventory!' });

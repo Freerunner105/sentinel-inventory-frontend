@@ -22,7 +22,7 @@ const LaundryDashboard = () => {
   const fetchLaundryItems = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/laundry', {
+      const response = await axios.get('https://jail-inventory-backend.herokuapp.com/laundry', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setLaundryItems(response.data);
@@ -40,7 +40,7 @@ const LaundryDashboard = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/laundry/send', { barcode }, {
+      await axios.post('https://jail-inventory-backend.herokuapp.com/laundry/send', { barcode }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAlertMessage({ type: 'success', text: 'Item sent to laundry!' });
@@ -60,7 +60,7 @@ const LaundryDashboard = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/laundry/return-inmate', { barcode }, {
+      await axios.post('https://jail-inventory-backend.herokuapp.com/laundry/return-inmate', { barcode }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAlertMessage({ type: 'success', text: 'Item returned to inmate!' });
@@ -87,7 +87,7 @@ const LaundryDashboard = () => {
   const handleConditionSelect = async (condition) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/laundry/return-inventory', { barcode: selectedBarcode, condition }, {
+      await axios.post('https://jail-inventory-backend.herokuapp.com/laundry/return-inventory', { barcode: selectedBarcode, condition }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAlertMessage({ type: 'success', text: 'Item returned to inventory!' });
