@@ -757,38 +757,21 @@ def get_action_logs():
 
 # Database Initialization
 with app.app_context():
-    # Check if the 'user' table exists before creating
-    if not db.engine.dialect.has_table(db.engine.connect(), 'user'):
-        db.create_all()
-        # Add initial users only if tables were just created
-        if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin', role='Admin', first_name='Admin', last_name='User', email='admin@example.com')
-            admin.set_password('admin123')
-            db.session.add(admin)
-        if not User.query.filter_by(username='staff').first():
-            staff = User(username='staff', role='Staff', first_name='Staff', last_name='One', email='staff@example.com')
-            staff.set_password('staff123')
-            db.session.add(staff)
-        if not User.query.filter_by(username='trustee').first():
-            trustee = User(username='trustee', role='Trustee', first_name='Trustee', last_name='Two', email='trustee@example.com')
-            trustee.set_password('trustee123')
-            db.session.add(trustee)
-        db.session.commit()
-    else:
-        # Ensure initial users exist even if tables are already present
-        if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin', role='Admin', first_name='Admin', last_name='User', email='admin@example.com')
-            admin.set_password('admin123')
-            db.session.add(admin)
-        if not User.query.filter_by(username='staff').first():
-            staff = User(username='staff', role='Staff', first_name='Staff', last_name='One', email='staff@example.com')
-            staff.set_password('staff123')
-            db.session.add(staff)
-        if not User.query.filter_by(username='trustee').first():
-            trustee = User(username='trustee', role='Trustee', first_name='Trustee', last_name='Two', email='trustee@example.com')
-            trustee.set_password('trustee123')
-            db.session.add(trustee)
-        db.session.commit()
+    db.create_all()  # Create tables if they don't exist
+    # Ensure initial users exist
+    if not User.query.filter_by(username='admin').first():
+        admin = User(username='admin', role='Admin', first_name='Admin', last_name='User', email='admin@example.com')
+        admin.set_password('admin123')
+        db.session.add(admin)
+    if not User.query.filter_by(username='staff').first():
+        staff = User(username='staff', role='Staff', first_name='Staff', last_name='One', email='staff@example.com')
+        staff.set_password('staff123')
+        db.session.add(staff)
+    if not User.query.filter_by(username='trustee').first():
+        trustee = User(username='trustee', role='Trustee', first_name='Trustee', last_name='Two', email='trustee@example.com')
+        trustee.set_password('trustee123')
+        db.session.add(trustee)
+    db.session.commit()
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
