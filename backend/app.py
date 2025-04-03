@@ -9,17 +9,17 @@ import random
 import traceback
 
 # Flask app setup
+basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)
-# Use DATABASE_URL for Heroku PostgreSQL, default to local PostgreSQL with psycopg
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql+psycopg://localhost/jail_inventory').replace('postgres://', 'postgresql+psycopg://')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'jail.db')).replace('postgres://', 'postgresql://')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6')  # Secure via env var
+app.config['JWT_SECRET_KEY'] = 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6'  # Consider securing this in production
 app.config['JWT_HEADER_TYPE'] = 'Bearer'
 app.config['JWT_HEADER_NAME'] = 'Authorization'
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
-CORS(app, resources={r"/*": {"origins": "https://jail-inventory-frontend-56f05c1c005d.herokuapp.com"}}, supports_credentials=True)  # Heroku frontend URL
+CORS(app, resources={r"/*": {"origins": "https://jail-inventory-frontend.herokuapp.com"}}, supports_credentials=True)  # Update with your actual frontend URL
 
 # JWT error handlers
 @jwt.invalid_token_loader
@@ -32,7 +32,7 @@ def unauthorized_callback(error):
     print(f"Unauthorized error: {error}")
     return jsonify({'error': 'Missing or invalid Authorization header'}), 401
 
-# Database Models (unchanged)
+# Database Models
 class User(db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
@@ -109,7 +109,7 @@ class ItemCode(db.Model):
     type = db.Column(db.String(50), nullable=False)
     code = db.Column(db.String(2), unique=True, nullable=False)
 
-# Utility function (unchanged)
+# Utility function to generate unique barcodes
 def generate_barcode(item_code, size_code):
     size_map = {
         'SM': '01', 'MD': '02', 'LG': '03', 'XL': '04', '2XL': '05', '3XL': '06',
@@ -123,7 +123,7 @@ def generate_barcode(item_code, size_code):
         barcode = f"{item_code}{size_numeric}{serial}"
     return barcode
 
-# Routes (unchanged from your version)
+# Routes
 @app.route('/login', methods=['POST'])
 def login():
     try:
@@ -757,28 +757,21 @@ def get_action_logs():
 
 # Database Initialization
 with app.app_context():
-    db.create_all()
-    if not User.query.first():
+    db.create_all()  # Create tables if they don't exist
+    # Ensure initial users exist
+    if not User.query.filter_by(username='admin').first():
         admin = User(username='admin', role='Admin', first_name='Admin', last_name='User', email='admin@example.com')
         admin.set_password('admin123')
+        db.session.add(admin)
+    if not User.query.filter_by(username='staff').first():
         staff = User(username='staff', role='Staff', first_name='Staff', last_name='One', email='staff@example.com')
         staff.set_password('staff123')
+        db.session.add(staff)
+    if not User.query.filter_by(username='trustee').first():
         trustee = User(username='trustee', role='Trustee', first_name='Trustee', last_name='Two', email='trustee@example.com')
         trustee.set_password('trustee123')
-        db.session.add_all([admin, staff, trustee])
-        db.session.commit()
-        
-from flask import send_from_directory
-import os
-
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve_frontend(path):
-    static_dir = os.path.join(os.getcwd(), '../.next/static')
-    if path != "" and os.path.exists(os.path.join(static_dir, path)):
-        return send_from_directory(static_dir, path)
-    return send_from_directory('../', 'index.html')
+        db.session.add(trustee)
+    db.session.commit()
 
 if __name__ == '__main__':
-   port = int(os.getenv('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(debug=True, port=5000)

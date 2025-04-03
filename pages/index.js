@@ -21,7 +21,7 @@ const Login = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('https://jail-inventory-backend.herokuapp.com', { username, password });
+      const response = await axios.post('https://jail-inventory-backend-3e76c7915903.herokuapp.com', { username, password });
       localStorage.setItem('token', response.data.token);
       setAlertMessage({ type: 'success', text: 'Login successful!' });
       setIsLoggedIn(true); // Trigger redirect via useEffect

@@ -20,7 +20,11 @@ const ReleaseDetail = () => {
   const fetchInmate = async () => {
     try {
       const token = localStorage.getItem('token');
+<<<<<<< HEAD:Pages/release/[id].js
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${id}`, {
+=======
+      const response = await axios.get(`https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates`, {
+>>>>>>> f6f110db7d2bf72928b3b68a6d3c5cac9cc1fa70:pages/release/[id].js
         headers: { Authorization: `Bearer ${token}` }
       });
       setInmate(response.data);
@@ -33,7 +37,11 @@ const ReleaseDetail = () => {
   const fetchItems = async () => {
     try {
       const token = localStorage.getItem('token');
+<<<<<<< HEAD:Pages/release/[id].js
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${id}/items`, {
+=======
+      const response = await axios.get(`https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates/${id}/items`, {
+>>>>>>> f6f110db7d2bf72928b3b68a6d3c5cac9cc1fa70:pages/release/[id].js
         headers: { Authorization: `Bearer ${token}` }
       });
       setItems(response.data);
@@ -46,7 +54,11 @@ const ReleaseDetail = () => {
   const handleRelease = async () => {
     try {
       const token = localStorage.getItem('token');
+<<<<<<< HEAD:Pages/release/[id].js
       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/release/${id}`, {}, {
+=======
+      await axios.post(`https://jail-inventory-backend-3e76c7915903.herokuapp.com/release/${id}`, {}, {
+>>>>>>> f6f110db7d2bf72928b3b68a6d3c5cac9cc1fa70:pages/release/[id].js
         headers: { Authorization: `Bearer ${token}` }
       });
       setAlertMessage({ type: 'success', text: 'Inmate released successfully!' });

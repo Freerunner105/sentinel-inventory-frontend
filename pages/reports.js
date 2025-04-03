@@ -23,7 +23,7 @@ const Reports = () => {
       if (filters.barcode) params.barcode = filters.barcode;
       if (filters.start_date) params.start_date = filters.start_date;
       if (filters.end_date) params.end_date = filters.end_date;
-      const res = await axios.get('https://jail-inventory-backend.herokuapp.com/reports/items', {
+      const res = await axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com/reports/items', {
         headers: { Authorization: `Bearer ${token}` },
         params
       });
@@ -42,7 +42,7 @@ const Reports = () => {
       if (filters.inmate_id) params.inmate_id = filters.inmate_id;
       if (filters.start_date) params.start_date = filters.start_date;
       if (filters.end_date) params.end_date = filters.end_date;
-      const res = await axios.get('https://jail-inventory-backend.herokuapp.com/reports/inmates', {
+      const res = await axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com/reports/inmates', {
         headers: { Authorization: `Bearer ${token}` },
         params
       });
@@ -60,7 +60,7 @@ const Reports = () => {
       const params = {};
       if (filters.start_date) params.start_date = filters.start_date;
       if (filters.end_date) params.end_date = filters.end_date;
-      const res = await axios.get('https://jail-inventory-backend.herokuapp.com/action_logs', {
+      const res = await axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com/action_logs', {
         headers: { Authorization: `Bearer ${token}` },
         params
       });
