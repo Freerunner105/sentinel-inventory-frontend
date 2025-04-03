@@ -20,7 +20,7 @@ const ReleaseDetail = () => {
   const fetchInmate = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/inmates`, {
+      const response = await axios.get(`https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const inmateData = response.data.find(i => i.id === id);
@@ -35,7 +35,7 @@ const ReleaseDetail = () => {
   const fetchItems = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/inmates/${id}/items`, {
+      const response = await axios.get(`https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates/${id}/items`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setItems(response.data);
@@ -48,7 +48,7 @@ const ReleaseDetail = () => {
   const handleRelease = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5000/release/${id}`, {}, {
+      await axios.post(`https://jail-inventory-backend-3e76c7915903.herokuapp.com/release/${id}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAlertMessage({ type: 'success', text: 'Inmate released successfully!' });

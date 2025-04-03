@@ -18,7 +18,7 @@ const AddInmate = () => {
 
   const handleAssignItem = () => {
     if (barcode) {
-      axios.get('https://jail-inventory-backend.herokuapp.com/inventory', {
+      axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com/inventory', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       })
         .then(res => {
@@ -52,12 +52,12 @@ const AddInmate = () => {
     };
     try {
       const token = localStorage.getItem('token');
-      await axios.post('https://jail-inventory-backend.herokuapp.com/inmates', newInmate, {
+      await axios.post('https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates', newInmate, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (items.length > 0) {
         for (const item of items) {
-          await axios.post(`https://jail-inventory-backend.herokuapp.com/inmates/${inmate.id}/items`, { barcode: item.barcode }, {
+          await axios.post(`https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates/${inmate.id}/items`, { barcode: item.barcode }, {
             headers: { Authorization: `Bearer ${token}` }
           });
         }

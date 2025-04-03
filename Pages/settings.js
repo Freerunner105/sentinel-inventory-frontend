@@ -21,7 +21,7 @@ const Settings = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('https://jail-inventory-backend.herokuapp.com/settings/users', {
+      const res = await axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com/settings/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(res.data);
@@ -35,7 +35,7 @@ const Settings = () => {
   const fetchFees = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('https://jail-inventory-backend.herokuapp.com/settings/fees', {
+      const res = await axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com/settings/fees', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFees(res.data);
@@ -53,7 +53,7 @@ const Settings = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post('https://jail-inventory-backend.herokuapp.com/settings/users', newUser, {
+      const res = await axios.post('https://jail-inventory-backend-3e76c7915903.herokuapp.com/settings/users', newUser, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers([...users, res.data]);
@@ -73,7 +73,7 @@ const Settings = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post('https://jail-inventory-backend.herokuapp.com/settings/fees', newFee, {
+      const res = await axios.post('https://jail-inventory-backend-3e76c7915903.herokuapp.com/settings/fees', newFee, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFees([...fees, res.data]);
