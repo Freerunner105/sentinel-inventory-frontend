@@ -3,7 +3,7 @@ import { Box, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRo
 import axios from 'axios';
 
 const Reports = () => {
-  const [tab, setTab] = useState('items'); // Simplified to toggle between reports
+  const [tab, setTab] = useState('items');
   const [itemReport, setItemReport] = useState([]);
   const [inmateReport, setInmateReport] = useState([]);
   const [actionLogs, setActionLogs] = useState([]);
@@ -23,11 +23,11 @@ const Reports = () => {
       if (filters.barcode) params.barcode = filters.barcode;
       if (filters.start_date) params.start_date = filters.start_date;
       if (filters.end_date) params.end_date = filters.end_date;
-      const res = await axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com/reports/items', {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/reports/items`, {
         headers: { Authorization: `Bearer ${token}` },
         params
       });
-      setItemReport(res.data);
+      setItemReport(response.data);
       setAlertMessage(null);
     } catch (err) {
       console.error('Error fetching item report:', err);
@@ -42,11 +42,11 @@ const Reports = () => {
       if (filters.inmate_id) params.inmate_id = filters.inmate_id;
       if (filters.start_date) params.start_date = filters.start_date;
       if (filters.end_date) params.end_date = filters.end_date;
-      const res = await axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com/reports/inmates', {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/reports/inmates`, {
         headers: { Authorization: `Bearer ${token}` },
         params
       });
-      setInmateReport(res.data);
+      setInmateReport(response.data);
       setAlertMessage(null);
     } catch (err) {
       console.error('Error fetching inmate report:', err);
@@ -60,11 +60,11 @@ const Reports = () => {
       const params = {};
       if (filters.start_date) params.start_date = filters.start_date;
       if (filters.end_date) params.end_date = filters.end_date;
-      const res = await axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com/action_logs', {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/action_logs`, {
         headers: { Authorization: `Bearer ${token}` },
         params
       });
-      setActionLogs(res.data);
+      setActionLogs(response.data);
       setAlertMessage(null);
     } catch (err) {
       console.error('Error fetching action logs:', err);

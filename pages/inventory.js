@@ -35,7 +35,7 @@ const InventoryDashboard = () => {
   const fetchInventory = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com', {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inventory`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setInventory(response.data);
@@ -49,7 +49,7 @@ const InventoryDashboard = () => {
   const fetchItemCodes = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com/inventory/codes', {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inventory/codes`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setItemCodes(response.data);
@@ -75,7 +75,7 @@ const InventoryDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const costPerItem = parseFloat(receiveForm.totalCost) / parseInt(receiveForm.quantity);
-      await axios.post('https://jail-inventory-backend-3e76c7915903.herokuapp.com/inventory/bulk', {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/inventory/bulk`, {
         item_code: receiveForm.itemCode,
         size_code: receiveForm.size,
         quantity: parseInt(receiveForm.quantity),
@@ -106,7 +106,7 @@ const InventoryDashboard = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      await axios.post('https://jail-inventory-backend-3e76c7915903.herokuapp.com/inventory/codes', {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/inventory/codes`, {
         name: codeForm.itemName,
         type: codeForm.itemType,
         code: codeForm.twoDigitCode.toUpperCase()
@@ -134,7 +134,7 @@ const InventoryDashboard = () => {
   const handleConditionSelect = async (condition) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post('https://jail-inventory-backend-3e76c7915903.herokuapp.com/inventory/remove', {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/inventory/remove`, {
         barcode: removeBarcode,
         condition,
         notes: removeNotes

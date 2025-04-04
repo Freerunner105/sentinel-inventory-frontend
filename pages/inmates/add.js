@@ -5,7 +5,7 @@ import AddIcon from '@mui/icons-material/Add';
 import axios from 'axios';
 
 const AddInmate = () => {
-  const [open, setOpen] = useState(true); // Dialog opens by default since this is a dedicated page
+  const [open, setOpen] = useState(true);
   const [inmate, setInmate] = useState({ id: '', name: '', housing_unit: '', fees_paid: '', notes: '' });
   const [barcode, setBarcode] = useState('');
   const [items, setItems] = useState([]);
@@ -18,7 +18,7 @@ const AddInmate = () => {
 
   const handleAssignItem = () => {
     if (barcode) {
-      axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com/inventory', {
+      axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inventory`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       })
         .then(res => {
@@ -52,18 +52,18 @@ const AddInmate = () => {
     };
     try {
       const token = localStorage.getItem('token');
-      await axios.post('https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates', newInmate, {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/inmates`, newInmate, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (items.length > 0) {
         for (const item of items) {
-          await axios.post(`https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates/${inmate.id}/items`, { barcode: item.barcode }, {
+          await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${inmate.id}/items`, { barcode: item.barcode }, {
             headers: { Authorization: `Bearer ${token}` }
           });
         }
       }
       setAlertMessage({ type: 'success', text: 'Inmate added successfully!' });
-      setTimeout(() => router.push('/inmates'), 1000); // Redirect after success
+      setTimeout(() => router.push('/inmates'), 1000);
     } catch (err) {
       console.error('Error adding inmate or items:', err);
       setAlertMessage({ type: 'error', text: 'Failed to add inmate or items!' });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow, TextField, Button, Alert, Radio, RadioGroup, FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
 
 const Settings = () => {
@@ -21,7 +22,7 @@ const Settings = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com/settings/users', {
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/settings/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(res.data);
@@ -35,7 +36,7 @@ const Settings = () => {
   const fetchFees = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com/settings/fees', {
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/settings/fees`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFees(res.data);
@@ -53,7 +54,7 @@ const Settings = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post('https://jail-inventory-backend-3e76c7915903.herokuapp.com/settings/users', newUser, {
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/settings/users`, newUser, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers([...users, res.data]);
@@ -66,6 +67,21 @@ const Settings = () => {
     }
   };
 
+  const handleDeleteUser = async (userId) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/settings/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUsers(users.filter((user) => user.id !== userId));
+      setAlertMessage({ type: 'success', text: 'User deleted successfully!' });
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setAlertMessage({ type: 'error', text: 'Failed to delete user!' });
+    }
+  };
+
   const handleAddFee = async () => {
     if (!newFee.name || !newFee.amount) {
       setAlertMessage({ type: 'error', text: 'Name and Amount are required!' });
@@ -73,7 +89,7 @@ const Settings = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post('https://jail-inventory-backend-3e76c7915903.herokuapp.com/settings/fees', newFee, {
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/settings/fees`, newFee, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFees([...fees, res.data]);
@@ -124,6 +140,7 @@ const Settings = () => {
                   <TableCell>First Name</TableCell>
                   <TableCell>Last Name</TableCell>
                   <TableCell>Email</TableCell>
+                  <TableCell>Action</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -135,6 +152,16 @@ const Settings = () => {
                     <TableCell>{user.first_name}</TableCell>
                     <TableCell>{user.last_name}</TableCell>
                     <TableCell>{user.email || 'N/A'}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => handleDeleteUser(user.id)}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

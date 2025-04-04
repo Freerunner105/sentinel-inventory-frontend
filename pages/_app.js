@@ -1,5 +1,3 @@
-   REM Clear the file
-import React from 'react';
 import Layout from '../components/Layout';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from '../theme';

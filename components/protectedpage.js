@@ -1,14 +1,15 @@
-// components/ProtectedPage.js
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 
-const ProtectedPage = ({ children, allowedRoles, user }) => {
+const ProtectedPage = ({ children }) => {
   const router = useRouter();
 
-  if (!user || !allowedRoles.includes(user.role)) {
-    router.push('/login');
-    return null;
-  }
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/');
+    }
+  }, [router]);
 
   return <>{children}</>;
 };

@@ -11,7 +11,6 @@ const Login = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
 
-  // Check for token and redirect if already logged in
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -21,17 +20,16 @@ const Login = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('https://jail-inventory-backend-3e76c7915903.herokuapp.com', { username, password });
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/login`, { username, password });
       localStorage.setItem('token', response.data.token);
       setAlertMessage({ type: 'success', text: 'Login successful!' });
-      setIsLoggedIn(true); // Trigger redirect via useEffect
+      setIsLoggedIn(true);
     } catch (err) {
       console.error('Login error:', err);
       setAlertMessage({ type: 'error', text: 'Invalid credentials!' });
     }
   };
 
-  // Redirect on successful login
   useEffect(() => {
     if (isLoggedIn) {
       router.push('/inmates');
@@ -69,7 +67,7 @@ const Login = () => {
             <LockIcon sx={{ fontSize: 40, color: 'primary.main' }} />
           </Box>
           <Typography variant="h4" gutterBottom align="center" sx={{ color: 'text.primary', fontWeight: 600 }}>
-            Jail Inventory Login
+            Sentinel Inventory Login
           </Typography>
           <Typography variant="body2" align="center" sx={{ color: 'text.secondary', mb: 3 }}>
             Please enter your credentials to access the system

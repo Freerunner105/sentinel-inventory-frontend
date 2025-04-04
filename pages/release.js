@@ -1,4 +1,3 @@
-// pages/release.js
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Alert } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -22,14 +21,14 @@ const ReleaseDashboard = () => {
   const fetchInmates = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates', {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const inmatesWithDetails = await Promise.all(response.data.map(async (inmate) => {
-        const itemsResponse = await axios.get(`https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates/${inmate.id}/items`, {
+        const itemsResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${inmate.id}/items`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const feesResponse = await axios.get(`https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates/${inmate.id}/fees`, {
+        const feesResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${inmate.id}/fees`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         return {
@@ -53,7 +52,7 @@ const ReleaseDashboard = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates/${barcode}/items`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${barcode}/items`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data.length > 0) {
@@ -83,7 +82,7 @@ const ReleaseDashboard = () => {
   const handleConditionSelect = async (condition) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post('https://jail-inventory-backend-3e76c7915903.herokuapp.com/laundry/return-inventory', { barcode: selectedBarcode, condition }, {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/laundry/return-inventory`, { barcode: selectedBarcode, condition }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAlertMessage({ type: 'success', text: 'Item returned to inventory!' });

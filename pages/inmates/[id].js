@@ -22,12 +22,10 @@ const InmateDetail = () => {
   const fetchInmate = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const inmateData = response.data.find(i => i.id === id);
-      if (!inmateData) throw new Error('Inmate not found');
-      setInmate(inmateData);
+      setInmate(response.data);
     } catch (err) {
       console.error('Error fetching inmate:', err);
       setAlertMessage({ type: 'error', text: 'Failed to fetch inmate!' });
@@ -37,7 +35,7 @@ const InmateDetail = () => {
   const fetchItems = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates/${id}/items`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${id}/items`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setItems(response.data);
@@ -54,7 +52,7 @@ const InmateDetail = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`https://jail-inventory-backend-3e76c7915903.herokuapp.com/inmates/${id}/items`, { barcode }, {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${id}/items`, { barcode }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAlertMessage({ type: 'success', text: 'Item assigned successfully!' });
