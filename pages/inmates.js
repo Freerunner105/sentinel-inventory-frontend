@@ -18,6 +18,10 @@ const InmatesDashboard = () => {
   const fetchInmates = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/'); // Redirect to login if no token
+        return;
+      }
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -25,7 +29,13 @@ const InmatesDashboard = () => {
       setAlertMessage(null);
     } catch (err) {
       console.error('Error fetching inmates:', err);
-      setAlertMessage({ type: 'error', text: 'Failed to fetch inmates!' });
+      if (err.response && err.response.status === 401) {
+        localStorage.removeItem('token'); // Clear invalid token
+        router.push('/'); // Redirect to login
+        setAlertMessage({ type: 'error', text: 'Session expired. Please log in again.' });
+      } else {
+        setAlertMessage({ type: 'error', text: 'Failed to fetch inmates!' });
+      }
     }
   };
 

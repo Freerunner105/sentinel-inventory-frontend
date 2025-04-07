@@ -22,26 +22,46 @@ const InmateDetail = () => {
   const fetchInmate = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/'); // Redirect to login if no token
+        return;
+      }
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setInmate(response.data);
     } catch (err) {
       console.error('Error fetching inmate:', err);
-      setAlertMessage({ type: 'error', text: 'Failed to fetch inmate!' });
+      if (err.response && err.response.status === 401) {
+        localStorage.removeItem('token'); // Clear invalid token
+        router.push('/'); // Redirect to login
+        setAlertMessage({ type: 'error', text: 'Session expired. Please log in again.' });
+      } else {
+        setAlertMessage({ type: 'error', text: 'Failed to fetch inmate!' });
+      }
     }
   };
 
   const fetchItems = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/'); // Redirect to login if no token
+        return;
+      }
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${id}/items`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setItems(response.data);
     } catch (err) {
       console.error('Error fetching items:', err);
-      setAlertMessage({ type: 'error', text: 'Failed to fetch items!' });
+      if (err.response && err.response.status === 401) {
+        localStorage.removeItem('token'); // Clear invalid token
+        router.push('/'); // Redirect to login
+        setAlertMessage({ type: 'error', text: 'Session expired. Please log in again.' });
+      } else {
+        setAlertMessage({ type: 'error', text: 'Failed to fetch items!' });
+      }
     }
   };
 
@@ -52,6 +72,10 @@ const InmateDetail = () => {
     }
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/'); // Redirect to login if no token
+        return;
+      }
       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${id}/items`, { barcode }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -60,7 +84,13 @@ const InmateDetail = () => {
       fetchItems();
     } catch (err) {
       console.error('Error assigning item:', err);
-      setAlertMessage({ type: 'error', text: 'Failed to assign item!' });
+      if (err.response && err.response.status === 401) {
+        localStorage.removeItem('token'); // Clear invalid token
+        router.push('/'); // Redirect to login
+        setAlertMessage({ type: 'error', text: 'Session expired. Please log in again.' });
+      } else {
+        setAlertMessage({ type: 'error', text: 'Failed to assign item!' });
+      }
     }
   };
 
