@@ -18,17 +18,18 @@ const Login = () => {
     }
   }, [router]);
 
-  const handleLogin = async () => {
-    try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/login`, { username, password });
-      localStorage.setItem('token', response.data.token);
-      setAlertMessage({ type: 'success', text: 'Login successful!' });
-      setIsLoggedIn(true);
-    } catch (err) {
-      console.error('Login error:', err);
-      setAlertMessage({ type: 'error', text: 'Invalid credentials!' });
-    }
-  };
+const handleLogin = async () => {
+  try {
+    console.log('API URL being used:', process.env.NEXT_PUBLIC_API_URL);
+    const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/login`, { username, password });
+    localStorage.setItem('token', response.data.token);
+    setAlertMessage({ type: 'success', text: 'Login successful!' });
+    setIsLoggedIn(true);
+  } catch (err) {
+    console.error('Login error:', err);
+    setAlertMessage({ type: 'error', text: 'Invalid credentials!' });
+  }
+};
 
   useEffect(() => {
     if (isLoggedIn) {
