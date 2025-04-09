@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow, Button, TextField, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Alert } from '@mui/material';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Box, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow, Button, TextField, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Alert, TableSortLabel } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import axios from 'axios';
 
@@ -26,6 +26,7 @@ const InventoryDashboard = () => {
     twoDigitCode: ''
   });
   const [alertMessage, setAlertMessage] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
   useEffect(() => {
     fetchInventory();
@@ -153,6 +154,34 @@ const InventoryDashboard = () => {
     }
   };
 
+  // Sorting logic
+  const requestSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedInventory = useMemo(() => {
+    let sortableInventory = [...inventory];
+    if (sortConfig.key) {
+      sortableInventory.sort((a, b) => {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortConfig.direction === 'ascending' ? aValue - bValue : bValue - aValue;
+        }
+        const aStr = String(aValue).toLowerCase();
+        const bStr = String(bValue).toLowerCase();
+        if (aStr < bStr) return sortConfig.direction === 'ascending' ? -1 : 1;
+        if (aStr > bStr) return sortConfig.direction === 'ascending' ? 1 : -1;
+        return 0;
+      });
+    }
+    return sortableInventory;
+  }, [inventory, sortConfig]);
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom color="primary">Inventory Dashboard</Typography>
@@ -178,16 +207,64 @@ const InventoryDashboard = () => {
         <Table sx={{ mt: 2 }}>
           <TableHead>
             <TableRow>
-              <TableCell>Barcode</TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Size</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Condition</TableCell>
-              <TableCell>Cost</TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortConfig.key === 'barcode'}
+                  direction={sortConfig.key === 'barcode' ? sortConfig.direction : 'asc'}
+                  onClick={() => requestSort('barcode')}
+                >
+                  Barcode
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortConfig.key === 'name'}
+                  direction={sortConfig.key === 'name' ? sortConfig.direction : 'asc'}
+                  onClick={() => requestSort('name')}
+                >
+                  Name
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortConfig.key === 'size'}
+                  direction={sortConfig.key === 'size' ? sortConfig.direction : 'asc'}
+                  onClick={() => requestSort('size')}
+                >
+                  Size
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortConfig.key === 'status'}
+                  direction={sortConfig.key === 'status' ? sortConfig.direction : 'asc'}
+                  onClick={() => requestSort('status')}
+                >
+                  Status
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortConfig.key === 'condition'}
+                  direction={sortConfig.key === 'condition' ? sortConfig.direction : 'asc'}
+                  onClick={() => requestSort('condition')}
+                >
+                  Condition
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortConfig.key === 'cost'}
+                  direction={sortConfig.key === 'cost' ? sortConfig.direction : 'asc'}
+                  onClick={() => requestSort('cost')}
+                >
+                  Cost
+                </TableSortLabel>
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {inventory.map((item) => (
+            {sortedInventory.map((item) => (
               <TableRow key={item.id} sx={{ '&:hover': { backgroundColor: '#F0F4F8' } }}>
                 <TableCell>{item.barcode}</TableCell>
                 <TableCell>{item.name}</TableCell>

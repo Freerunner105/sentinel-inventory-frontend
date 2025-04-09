@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert } from '@mui/material';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Box, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert, TableSortLabel } from '@mui/material';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import AddIcon from '@mui/icons-material/Add';
@@ -9,6 +9,7 @@ const InmatesDashboard = () => {
   const [assignOpen, setAssignOpen] = useState(false);
   const [inmateId, setInmateId] = useState('');
   const [alertMessage, setAlertMessage] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const router = useRouter();
 
   useEffect(() => {
@@ -53,6 +54,34 @@ const InmatesDashboard = () => {
     setInmateId('');
   };
 
+  // Sorting logic
+  const requestSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedInmates = useMemo(() => {
+    let sortableInmates = [...inmates];
+    if (sortConfig.key) {
+      sortableInmates.sort((a, b) => {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortConfig.direction === 'ascending' ? aValue - bValue : bValue - aValue;
+        }
+        const aStr = String(aValue).toLowerCase();
+        const bStr = String(bValue).toLowerCase();
+        if (aStr < bStr) return sortConfig.direction === 'ascending' ? -1 : 1;
+        if (aStr > bStr) return sortConfig.direction === 'ascending' ? 1 : -1;
+        return 0;
+      });
+    }
+    return sortableInmates;
+  }, [inmates, sortConfig]);
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom color="primary">Inmates Dashboard</Typography>
@@ -72,15 +101,47 @@ const InmatesDashboard = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Housing Unit</TableCell>
-              <TableCell>Fees Paid</TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortConfig.key === 'id'}
+                  direction={sortConfig.key === 'id' ? sortConfig.direction : 'asc'}
+                  onClick={() => requestSort('id')}
+                >
+                  ID
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortConfig.key === 'name'}
+                  direction={sortConfig.key === 'name' ? sortConfig.direction : 'asc'}
+                  onClick={() => requestSort('name')}
+                >
+                  Name
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortConfig.key === 'housing_unit'}
+                  direction={sortConfig.key === 'housing_unit' ? sortConfig.direction : 'asc'}
+                  onClick={() => requestSort('housing_unit')}
+                >
+                  Housing Unit
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortConfig.key === 'fees_paid'}
+                  direction={sortConfig.key === 'fees_paid' ? sortConfig.direction : 'asc'}
+                  onClick={() => requestSort('fees_paid')}
+                >
+                  Fees Paid
+                </TableSortLabel>
+              </TableCell>
               <TableCell>Notes</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {inmates.map((inmate) => (
+            {sortedInmates.map((inmate) => (
               <TableRow key={inmate.id} sx={{ '&:hover': { backgroundColor: '#F0F4F8' } }}>
                 <TableCell>{inmate.id}</TableCell>
                 <TableCell>{inmate.name}</TableCell>
