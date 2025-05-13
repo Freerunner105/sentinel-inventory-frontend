@@ -21,27 +21,79 @@ const ReleaseDashboard = () => {
   const fetchInmates = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        setAlertMessage({ type: 'error', text: 'Authentication token not found. Please log in again.' });
+        return;
+      }
+      console.log("Fetching inmates list...");
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const inmatesWithDetails = await Promise.all(response.data.map(async (inmate) => {
-        const itemsResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${inmate.id}/items`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const feesResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${inmate.id}/fees`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        return {
-          ...inmate,
-          assignedItems: itemsResponse.data.map(item => item.name).join(', '),
-          totalFees: feesResponse.data.reduce((sum, fee) => sum + fee.amount, 0)
-        };
-      }));
-      setInmates(inmatesWithDetails);
-      setAlertMessage(null);
+      console.log("Inmates list fetched:", response.data);
+
+      const inmatesWithDetailsPromises = response.data.map(async (inmate) => {
+        try {
+          console.log(`Fetching details for inmate ${inmate.id}...`);
+          const itemsResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${inmate.id}/items`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          console.log(`Items for inmate ${inmate.id}:`, itemsResponse.data);
+
+          const feesResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${inmate.id}/fees`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          console.log(`Fees for inmate ${inmate.id}:`, feesResponse.data);
+
+          const assignedItemsString = Array.isArray(itemsResponse.data) ? itemsResponse.data.map(item => item.name || 'Unnamed Item').join(', ') : 'Error loading items';
+          const totalFeesAmount = Array.isArray(feesResponse.data) ? feesResponse.data.reduce((sum, fee) => sum + (parseFloat(fee.amount) || 0), 0) : 0;
+
+          return {
+            ...inmate,
+            assignedItems: assignedItemsString,
+            totalFees: totalFeesAmount
+          };
+        } catch (err) {
+          console.error(`Error fetching details for inmate ${inmate.id}:`, err);
+          let detailErrorMsg = 'Error loading details';
+          if (err.response) {
+            detailErrorMsg = `Details error: ${err.response.status} ${err.response.data.error || err.response.statusText}`;
+          } else if (err.request) {
+            detailErrorMsg = 'Details error: No server response';
+          } else {
+            detailErrorMsg = `Details error: ${err.message}`;
+          }
+          return {
+            ...inmate,
+            assignedItems: detailErrorMsg,
+            totalFees: 'Error',
+            errorLoadingDetails: true 
+          };
+        }
+      });
+
+      const inmatesWithDetails = await Promise.all(inmatesWithDetailsPromises);
+      console.log("Inmates with details:", inmatesWithDetails);
+
+      const detailErrorInmates = inmatesWithDetails.filter(i => i.errorLoadingDetails);
+      if (detailErrorInmates.length > 0) {
+          setAlertMessage({ type: 'warning', text: `Failed to fetch full details for ${detailErrorInmates.length} inmate(s). Displaying partial data. Check console for more info.` });
+      } else {
+          setAlertMessage(null);
+      }
+      // Remove the error flag before setting state for UI display
+      setInmates(inmatesWithDetails.map(({errorLoadingDetails, ...rest}) => rest)); 
+
     } catch (err) {
-      console.error('Error fetching inmates:', err);
-      setAlertMessage({ type: 'error', text: 'Failed to fetch inmates!' });
+      console.error('Error in fetchInmates main try-catch:', err);
+      let detailedErrorMessage = 'Failed to fetch inmates list!';
+      if (err.response) {
+        detailedErrorMessage = `Failed to fetch inmates list. Server responded with ${err.response.status}: ${err.response.data.error || err.response.statusText}`;
+      } else if (err.request) {
+        detailedErrorMessage = 'Failed to fetch inmates list. No response received from server.';
+      } else {
+        detailedErrorMessage = `Failed to fetch inmates list. Error: ${err.message}`;
+      }
+      setAlertMessage({ type: 'error', text: detailedErrorMessage });
     }
   };
 
@@ -52,19 +104,21 @@ const ReleaseDashboard = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${barcode}/items`, {
+      // Check if inmate has assigned items before proceeding to release page
+      const itemsResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${barcode}/items`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (response.data.length > 0) {
-        setAlertMessage({ type: 'error', text: 'Cannot release inmate with assigned items!' });
+      if (itemsResponse.data && itemsResponse.data.length > 0) {
+        setAlertMessage({ type: 'error', text: `Cannot release inmate ${barcode}. They have ${itemsResponse.data.length} item(s) still assigned. Please process items first.` });
         return;
       }
-      router.push(`/release/${barcode}`);
+      // If no items, proceed to the specific release page for confirmation
+      router.push(`/release/${barcode}`); 
       setBarcode('');
       setReleaseOpen(false);
     } catch (err) {
-      console.error('Error checking inmate items:', err);
-      setAlertMessage({ type: 'error', text: 'Failed to check inmate items!' });
+      console.error('Error checking inmate items for release:', err);
+      setAlertMessage({ type: 'error', text: err.response?.data?.error || 'Failed to check inmate items for release!' });
     }
   };
 
@@ -88,10 +142,10 @@ const ReleaseDashboard = () => {
       setAlertMessage({ type: 'success', text: 'Item returned to inventory!' });
       setSelectedBarcode('');
       setConditionOpen(false);
-      fetchInmates();
+      fetchInmates(); // Refresh inmate list as item status might affect their displayed details indirectly
     } catch (err) {
       console.error('Error returning item to inventory:', err);
-      setAlertMessage({ type: 'error', text: 'Failed to return item to inventory!' });
+      setAlertMessage({ type: 'error', text: err.response?.data?.error || 'Failed to return item to inventory!' });
     }
   };
 
@@ -131,11 +185,11 @@ const ReleaseDashboard = () => {
                 <TableCell>{inmate.id}</TableCell>
                 <TableCell>{inmate.name}</TableCell>
                 <TableCell>{inmate.housing_unit}</TableCell>
-                <TableCell>${inmate.totalFees.toFixed(2)}</TableCell>
+                <TableCell>{typeof inmate.totalFees === 'number' ? `$${inmate.totalFees.toFixed(2)}` : inmate.totalFees}</TableCell>
                 <TableCell>{inmate.assignedItems || 'None'}</TableCell>
                 <TableCell>
                   <Button variant="outlined" size="small" onClick={() => router.push(`/release/${inmate.id}`)}>
-                    View Details
+                    View Details / Release
                   </Button>
                 </TableCell>
               </TableRow>
@@ -144,17 +198,23 @@ const ReleaseDashboard = () => {
         </Table>
       </Paper>
 
-      {/* Release Inmate Dialog */}
+      {/* Release Inmate Dialog - For entering Inmate ID */}
       <Dialog open={releaseOpen} onClose={() => setReleaseOpen(false)}>
-        <DialogTitle>Release Inmate</DialogTitle>
+        <DialogTitle>Release Inmate - Enter ID</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <TextField label="Inmate ID" value={barcode} onChange={(e) => setBarcode(e.target.value)} variant="outlined" />
+            <TextField 
+              label="Inmate ID"
+              value={barcode} // Using 'barcode' state, consider renaming to 'inmateIdToRelease'
+              onChange={(e) => setBarcode(e.target.value)} 
+              variant="outlined" 
+              helperText="Enter the ID of the inmate to check for release eligibility."
+            />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setReleaseOpen(false)}>Cancel</Button>
-          <Button onClick={handleReleaseSubmit} color="primary">Submit</Button>
+          <Button onClick={handleReleaseSubmit} color="primary">Check & Proceed</Button>
         </DialogActions>
       </Dialog>
 
@@ -163,12 +223,17 @@ const ReleaseDashboard = () => {
         <DialogTitle>Return Item to Inventory</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <TextField label="Barcode" value={barcode} onChange={(e) => setBarcode(e.target.value)} variant="outlined" />
+            <TextField 
+              label="Item Barcode"
+              value={barcode} // Using 'barcode' state, consider renaming to 'itemBarcodeToReturn'
+              onChange={(e) => setBarcode(e.target.value)} 
+              variant="outlined" 
+            />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setReturnOpen(false)}>Cancel</Button>
-          <Button onClick={handleReturnToInventorySubmit} color="primary">Submit</Button>
+          <Button onClick={handleReturnToInventorySubmit} color="primary">Next</Button>
         </DialogActions>
       </Dialog>
 
@@ -200,3 +265,4 @@ const ReleaseDashboard = () => {
 };
 
 export default ReleaseDashboard;
+

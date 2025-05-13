@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert, TableSortLabel } from '@mui/material';
+import { Box, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert, TableSortLabel, IconButton } from '@mui/material';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit'; // Import EditIcon
 
 const InmatesDashboard = () => {
   const [inmates, setInmates] = useState([]);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false); // State for edit dialog
+  const [currentInmate, setCurrentInmate] = useState(null); // State for inmate being edited
+  const [editFormData, setEditFormData] = useState({ housing_unit: '', notes: '' }); // State for edit form data
   const [inmateId, setInmateId] = useState('');
   const [alertMessage, setAlertMessage] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
@@ -52,6 +56,38 @@ const InmatesDashboard = () => {
     router.push(`/inmates/${inmateId}`);
     setAssignOpen(false);
     setInmateId('');
+  };
+
+  const handleOpenEditDialog = (inmate) => {
+    setCurrentInmate(inmate);
+    setEditFormData({ housing_unit: inmate.housing_unit || '', notes: inmate.notes || '' });
+    setEditOpen(true);
+  };
+
+  const handleCloseEditDialog = () => {
+    setEditOpen(false);
+    setCurrentInmate(null);
+    setEditFormData({ housing_unit: '', notes: '' });
+  };
+
+  const handleEditFormChange = (e) => {
+    setEditFormData({ ...editFormData, [e.target.name]: e.target.value });
+  };
+
+  const handleUpdateInmate = async () => {
+    if (!currentInmate) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/inmates/${currentInmate.id}`, editFormData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAlertMessage({ type: 'success', text: 'Inmate details updated successfully!' });
+      handleCloseEditDialog();
+      fetchInmates(); // Refresh the list
+    } catch (err) {
+      console.error('Error updating inmate:', err);
+      setAlertMessage({ type: 'error', text: err.response?.data?.error || 'Failed to update inmate details!' });
+    }
   };
 
   // Sorting logic
@@ -138,6 +174,7 @@ const InmatesDashboard = () => {
                 </TableSortLabel>
               </TableCell>
               <TableCell>Notes</TableCell>
+              <TableCell>Actions</TableCell> {/* Actions column */}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -148,6 +185,11 @@ const InmatesDashboard = () => {
                 <TableCell>{inmate.housing_unit}</TableCell>
                 <TableCell>${inmate.fees_paid.toFixed(2)}</TableCell>
                 <TableCell>{inmate.notes}</TableCell>
+                <TableCell>
+                  <IconButton onClick={() => handleOpenEditDialog(inmate)} color="primary">
+                    <EditIcon />
+                  </IconButton>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -172,8 +214,42 @@ const InmatesDashboard = () => {
           <Button onClick={handleAssignItems} color="primary">Submit</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Edit Inmate Dialog */}
+      {currentInmate && (
+        <Dialog open={editOpen} onClose={handleCloseEditDialog}>
+          <DialogTitle>Edit Inmate: {currentInmate.name} (ID: {currentInmate.id})</DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+              <TextField
+                label="Housing Unit"
+                name="housing_unit"
+                value={editFormData.housing_unit}
+                onChange={handleEditFormChange}
+                variant="outlined"
+                fullWidth
+              />
+              <TextField
+                label="Notes"
+                name="notes"
+                value={editFormData.notes}
+                onChange={handleEditFormChange}
+                variant="outlined"
+                multiline
+                rows={3}
+                fullWidth
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseEditDialog}>Cancel</Button>
+            <Button onClick={handleUpdateInmate} color="primary">Update</Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 };
 
 export default InmatesDashboard;
+
