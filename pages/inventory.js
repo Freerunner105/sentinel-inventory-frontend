@@ -14,7 +14,8 @@ const InventoryDashboard = () => {
   const [removeOpen, setRemoveOpen] = useState(false);
   const [editItemOpen, setEditItemOpen] = useState(false);
   const [currentItemToEdit, setCurrentItemToEdit] = useState(null);
-  const [editItemForm, setEditItemForm] = useState({ name: '', vendor: '', cost: '', condition: 'New', notes: '' });
+  // Add item_group to editItemForm state
+  const [editItemForm, setEditItemForm] = useState({ name: '', vendor: '', cost: '', condition: 'New', notes: '', item_group: 'Misc.' });
   const [removeBarcode, setRemoveBarcode] = useState('');
   const [removeCondition, setRemoveCondition] = useState('');
   const [removeNotes, setRemoveNotes] = useState('');
@@ -59,7 +60,7 @@ const InventoryDashboard = () => {
   useEffect(() => {
     fetchInventory(searchTerm);
     fetchItemCodes();
-  }, []);
+  }, []); // Removed searchTerm from dependency array to avoid double initial fetch
 
   useEffect(() => {
     debouncedFetchInventory(searchTerm);
@@ -112,6 +113,7 @@ const InventoryDashboard = () => {
         name: receiveForm.itemName,
         cost: costPerItem,
         vendor: receiveForm.vendor
+        // item_group will default to 'Misc.' on backend if not provided
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -156,17 +158,14 @@ const InventoryDashboard = () => {
   const handleRemoveItemSubmit = async () => {
     if (!removeBarcode) {
       setAlertMessage({ type: 'error', text: 'Barcode is required to identify the item for removal.' });
-      setRemoveOpen(true); // Keep dialog open for barcode input
+      setRemoveOpen(true);
       return;
     }
-    // This function is primarily for the 'Next' button in the dialog if barcode is not yet entered.
-    // The actual removal is handled by handleConditionSelect.
-    // If barcode is entered, the condition selection part of the dialog becomes visible.
     setRemoveOpen(true); 
   };
 
   const handleConditionSelect = async (condition) => {
-    if (!removeBarcode) { // Should not happen if UI flow is correct
+    if (!removeBarcode) { 
         setAlertMessage({ type: 'error', text: 'Barcode missing for removal.' });
         return;
     }
@@ -198,7 +197,8 @@ const InventoryDashboard = () => {
       vendor: item.vendor || '',
       cost: item.cost !== undefined ? String(item.cost) : '',
       condition: item.condition || 'New',
-      notes: item.notes || ''
+      notes: item.notes || '',
+      item_group: item.item_group || 'Misc.' // Set item_group from item or default
     });
     setEditItemOpen(true);
   };
@@ -208,8 +208,8 @@ const InventoryDashboard = () => {
   };
 
   const handleEditItemSubmit = async () => {
-    if (!currentItemToEdit || !editItemForm.name || editItemForm.cost === '' || !editItemForm.condition) {
-      setAlertMessage({ type: 'error', text: 'Name, Cost, and Condition are required for editing!' });
+    if (!currentItemToEdit || !editItemForm.name || editItemForm.cost === '' || !editItemForm.condition || !editItemForm.item_group) {
+      setAlertMessage({ type: 'error', text: 'Name, Cost, Condition, and Item Group are required for editing!' });
       return;
     }
     try {
@@ -220,6 +220,7 @@ const InventoryDashboard = () => {
         cost: parseFloat(editItemForm.cost),
         condition: editItemForm.condition,
         notes: editItemForm.notes,
+        item_group: editItemForm.item_group // Include item_group in payload
       };
       await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/inventory/${currentItemToEdit.barcode}`, payload, {
         headers: { Authorization: `Bearer ${token}` }
@@ -251,8 +252,9 @@ const InventoryDashboard = () => {
         if (typeof aValue === 'number' && typeof bValue === 'number') {
           return sortConfig.direction === 'ascending' ? aValue - bValue : bValue - aValue;
         }
-        const aStr = String(aValue).toLowerCase();
-        const bStr = String(bValue).toLowerCase();
+        // Ensure item_group (and other potential null/undefined values) are handled for sorting
+        const aStr = String(aValue || '').toLowerCase(); 
+        const bStr = String(bValue || '').toLowerCase();
         if (aStr < bStr) return sortConfig.direction === 'ascending' ? -1 : 1;
         if (aStr > bStr) return sortConfig.direction === 'ascending' ? 1 : -1;
         return 0;
@@ -310,6 +312,9 @@ const InventoryDashboard = () => {
                 <TableSortLabel active={sortConfig.key === 'name'} direction={sortConfig.key === 'name' ? sortConfig.direction : 'asc'} onClick={() => requestSort('name')}>Name</TableSortLabel>
               </TableCell>
               <TableCell>
+                <TableSortLabel active={sortConfig.key === 'item_group'} direction={sortConfig.key === 'item_group' ? sortConfig.direction : 'asc'} onClick={() => requestSort('item_group')}>Item Group</TableSortLabel>
+              </TableCell>
+              <TableCell>
                 <TableSortLabel active={sortConfig.key === 'size'} direction={sortConfig.key === 'size' ? sortConfig.direction : 'asc'} onClick={() => requestSort('size')}>Size</TableSortLabel>
               </TableCell>
               <TableCell>
@@ -329,6 +334,7 @@ const InventoryDashboard = () => {
               <TableRow key={item.id} sx={{ '&:hover': { backgroundColor: '#F0F4F8' } }}>
                 <TableCell>{item.barcode}</TableCell>
                 <TableCell>{item.name}</TableCell>
+                <TableCell>{item.item_group || 'Misc.'}</TableCell> {/* Display item_group, default to Misc. */}
                 <TableCell>{item.size}</TableCell>
                 <TableCell>{item.status}</TableCell>
                 <TableCell>{item.condition}</TableCell>
@@ -373,68 +379,80 @@ const InventoryDashboard = () => {
 
       {/* Create Item Code Dialog */}
       <Dialog open={codeOpen} onClose={() => setCodeOpen(false)}>
-        <DialogTitle>Create Item Code</DialogTitle>
+        <DialogTitle>Create New Item Code</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1, width: '400px' }}>
             <TextField label="Item Name" value={codeForm.itemName} onChange={handleCodeChange('itemName')} variant="outlined" fullWidth />
             <TextField label="Item Type" value={codeForm.itemType} onChange={handleCodeChange('itemType')} variant="outlined" fullWidth />
-            <TextField label="Two-Digit Code" value={codeForm.twoDigitCode} onChange={handleCodeChange('twoDigitCode')} variant="outlined" inputProps={{ maxLength: 2 }} fullWidth />
+            <TextField label="Two-Digit Code" value={codeForm.twoDigitCode} onChange={handleCodeChange('twoDigitCode')} variant="outlined" fullWidth inputProps={{ maxLength: 2 }} />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCodeOpen(false)}>Cancel</Button>
-          <Button onClick={handleCodeSubmit} color="primary">Submit</Button>
+          <Button onClick={handleCodeSubmit} color="primary">Create Code</Button>
         </DialogActions>
       </Dialog>
 
       {/* Remove Item Dialog */}
       <Dialog open={removeOpen} onClose={() => setRemoveOpen(false)}>
-        <DialogTitle>Remove Item</DialogTitle>
+        <DialogTitle>Remove Item from Inventory</DialogTitle>
         <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1, width: '400px' }}>
-            <TextField label="Barcode" value={removeBarcode} onChange={(e) => setRemoveBarcode(e.target.value)} variant="outlined" fullWidth />
-            {removeBarcode && (
-              <>
-                <Typography>Select condition for item {removeBarcode}:</Typography>
-                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt:1 }}>
-                  <Button variant="contained" color="primary" onClick={() => handleConditionSelect('Used')}>Used</Button>
-                  <Button variant="contained" color="secondary" onClick={() => handleConditionSelect('Altered')}>Altered</Button>
-                  <Button variant="contained" color="warning" onClick={() => handleConditionSelect('Damaged')}>Damaged</Button>
-                </Box>
-                <TextField label="Notes (optional)" value={removeNotes} onChange={(e) => setRemoveNotes(e.target.value)} multiline rows={2} variant="outlined" fullWidth sx={{mt:1}}/>
-              </>
-            )}
+          <TextField 
+            label="Item Barcode to Remove" 
+            value={removeBarcode} 
+            onChange={(e) => setRemoveBarcode(e.target.value)} 
+            variant="outlined" 
+            fullWidth 
+            sx={{ mb: 2, mt: 1 }}
+          />
+          <TextField 
+            label="Notes (Optional)" 
+            value={removeNotes} 
+            onChange={(e) => setRemoveNotes(e.target.value)} 
+            variant="outlined" 
+            multiline
+            rows={2}
+            fullWidth 
+            sx={{ mb: 2 }}
+          />
+          <Typography variant="subtitle1" gutterBottom>Select Condition of Removed Item:</Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {['Used', 'Altered', 'Damaged', 'Lost', 'Other'].map(condition => (
+              <Button key={condition} variant="outlined" onClick={() => handleConditionSelect(condition)} disabled={!removeBarcode}>
+                {condition}
+              </Button>
+            ))}
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRemoveOpen(false)}>Cancel</Button>
-          {/* The 'Next' button is removed as condition selection appears once barcode is entered */}
-          {/* Submission is handled by condition buttons if barcode is present */}
         </DialogActions>
       </Dialog>
 
       {/* Edit Item Dialog */}
-      <Dialog open={editItemOpen} onClose={() => setEditItemOpen(false)}>
-        <DialogTitle>Edit Inventory Item - {currentItemToEdit?.barcode}</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1, width: '400px' }}>
-            <TextField label="Name" value={editItemForm.name} onChange={handleEditItemChange('name')} variant="outlined" fullWidth />
-            <TextField label="Vendor" value={editItemForm.vendor} onChange={handleEditItemChange('vendor')} variant="outlined" fullWidth />
-            <TextField label="Cost ($)" type="number" value={editItemForm.cost} onChange={handleEditItemChange('cost')} variant="outlined" fullWidth />
-            <TextField select label="Condition" value={editItemForm.condition} onChange={handleEditItemChange('condition')} variant="outlined" fullWidth>
-              {['New', 'Used', 'Altered', 'Damaged'].map((cond) => (
-                <MenuItem key={cond} value={cond}>{cond}</MenuItem>
-              ))}
-            </TextField>
-            <TextField label="Notes" value={editItemForm.notes} onChange={handleEditItemChange('notes')} variant="outlined" multiline rows={3} fullWidth />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditItemOpen(false)}>Cancel</Button>
-          <Button onClick={handleEditItemSubmit} color="primary">Save Changes</Button>
-        </DialogActions>
-      </Dialog>
-
+      {currentItemToEdit && (
+        <Dialog open={editItemOpen} onClose={() => setEditItemOpen(false)}>
+          <DialogTitle>Edit Item: {currentItemToEdit.name} ({currentItemToEdit.barcode})</DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1, width: '400px' }}>
+              <TextField label="Name" value={editItemForm.name} onChange={handleEditItemChange('name')} variant="outlined" fullWidth />
+              <TextField label="Vendor" value={editItemForm.vendor} onChange={handleEditItemChange('vendor')} variant="outlined" fullWidth />
+              <TextField label="Cost ($)" type="number" value={editItemForm.cost} onChange={handleEditItemChange('cost')} variant="outlined" fullWidth />
+              <TextField select label="Condition" value={editItemForm.condition} onChange={handleEditItemChange('condition')} variant="outlined" fullWidth>
+                {['New', 'Used', 'Altered', 'Damaged'].map((cond) => (
+                  <MenuItem key={cond} value={cond}>{cond}</MenuItem>
+                ))}
+              </TextField>
+              <TextField label="Item Group" value={editItemForm.item_group} onChange={handleEditItemChange('item_group')} variant="outlined" fullWidth helperText="e.g., Clothing, Bedding, Hygiene, Misc."/>
+              <TextField label="Notes" value={editItemForm.notes} onChange={handleEditItemChange('notes')} variant="outlined" multiline rows={3} fullWidth />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditItemOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditItemSubmit} color="primary">Update Item</Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 };
